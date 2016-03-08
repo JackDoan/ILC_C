@@ -52,19 +52,26 @@ int main(int argc, char **argv)
     //0-MEM_WIDTH: memory blocks of MEM_DEPTH size
     //MEM_ITER = MEM_WIDTH+1: a table of current indexes for each block
     //MEM_VAL = MEM_WIDTH+2: a table of current averages for each block
-
+    
+    double  reference[MEM_WIDTH] = [0,1,5,2,7,8,2,6,7,3]; //something to test with
     double* memory[MEM_WIDTH+2];
     initializeMemory(memory);
 
     int keepGoing = 1;
     int index = getIndex(0);
+    double Kp = 1;
+    double Ki = 1;
+    double lastError[MEM_WIDTH] = {0};
     while(keepGoing) {
     	index = getIndex(index);
-    	setOutput(MEM_VAL[index]);
-
+	double toSet = (Kp*lastError[index])+(Ki*MEM_VAL[index])+reference[index];
+    	setOutput(outputHandle, toSet);
+	//wait for a bit (outputs aren't instantaneous!)
+	double result = measureFeedback(feedbackHandle); //some sort of unit conversion needs to take place here
+	lastError[index] = result-reference[index];
+	updateBlock(memory, index, lastError[index]);
+	
     }
-
-
 
     /*
      * Close the myRIO NiFpga Session.
@@ -74,6 +81,20 @@ int main(int argc, char **argv)
     status = MyRio_Close();
 
     return status;
+}
+
+double measureFeedback(int* feedbackHandle) {
+	double value = 0
+	//reads feedback from sensors
+	//read encoder_joint
+	//read torque_joint
+	//read IMU <-- I think I want to thread this. Blocking serial reads suck.
+	return value;
+}
+
+void setOutput(int* outputHandle, double toSet) {
+	//writes the output value to the registers
+	
 }
 
 double updateBlock(double** memory, int blockIndex, double value) {
